@@ -21,7 +21,8 @@ def call_deepseek(prompt):
         raise ValueError("環境変数 DEEPSEEK_API_KEY が設定されていません")
     client = openai.OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
     response = client.chat.completions.create(
-        model="deepseek-chat",
+        # model="deepseek-chat",
+        model="deepseek-v4-flash",
         messages=[
             {"role": "system", "content": "あなたは親切でポジティブな評価者です。"},
             {"role": "user", "content": prompt}
@@ -31,7 +32,7 @@ def call_deepseek(prompt):
     )
     return response.choices[0].message.content.strip()
 
-st.title("アプリ評価アプリ")
+st.title("🌸アプリ評価アプリ")
 st.write("あなたのアプリのスクリプトやデータファイルをアップロードし、「評価する」ボタンを押してください。")
 
 uploaded_files = st.file_uploader(
