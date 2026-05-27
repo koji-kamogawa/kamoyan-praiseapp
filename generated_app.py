@@ -2,6 +2,7 @@ import streamlit as st
 import openai
 import os
 import json
+import re
 
 st.set_page_config(page_title="アプリ評価アプリ")
 
@@ -14,6 +15,14 @@ def read_uploaded_files(uploaded_files):
         except UnicodeDecodeError:
             contents.append(f"--- {file.name} ---\n[バイナリファイルのため内容は読み取れません]")
     return "\n\n".join(contents)
+
+def extract_title_from_script(content):
+    """スクリプト内容からst.title()の引数を抽出する"""
+    pattern = r"st\.title\(\s*['\"]([^'\"]+)['\"]\s*\)"
+    match = re.search(pattern, content)
+    if match:
+        return match.group(1)
+    return None
 
 def call_deepseek(prompt):
     api_key = os.environ.get("DEEPSEEK_API_KEY")
@@ -45,6 +54,8 @@ if "evaluate" not in st.session_state:
     st.session_state.evaluate = False
 if "evaluation_text" not in st.session_state:
     st.session_state.evaluation_text = ""
+if "extracted_title" not in st.session_state:
+    st.session_state.extracted_title = None
 
 col1, col2 = st.columns([1, 4])
 with col1:
@@ -52,6 +63,16 @@ with col1:
         if uploaded_files and len(uploaded_files) > 0:
             st.session_state.evaluate = True
             st.session_state.evaluation_text = ""
+            # アップロードされたスクリプトからタイトルを抽出
+            for file in uploaded_files:
+                try:
+                    content = file.getvalue().decode("utf-8")
+                    title = extract_title_from_script(content)
+                    if title:
+                        st.session_state.extracted_title = title
+                        break
+                except UnicodeDecodeError:
+                    continue
         else:
             st.error("ファイルが1つもアップロードされていません。")
             st.session_state.evaluate = False
@@ -70,6 +91,10 @@ if st.session_state.evaluate and uploaded_files:
             st.error(f"エラーが発生しました: {e}")
             st.session_state.evaluation_text = ""
     st.session_state.evaluate = False
+
+# 抽出したタイトルを評価結果の前に表示
+if st.session_state.extracted_title:
+    st.markdown(f"### アプリのタイトル: {st.session_state.extracted_title}")
 
 if st.session_state.evaluation_text:
     st.success("評価が完了しました！")
